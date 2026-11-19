@@ -1,0 +1,20 @@
+
+{{- if and .Values.backup.enabled .Values.backup.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "gitea-helm.fullname" . }}-backup
+  labels:
+    {{- include "gitea-helm.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    {{- toYaml .Values.backup.persistence.accessModes | nindent 4 }}
+
+  {{- with .Values.backup.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+
+  resources:
+    requests:
+      storage: {{ .Values.backup.persistence.size }}
+{{- end }}

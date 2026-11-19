@@ -1,0 +1,90 @@
+
+{{- if and .Values.backup.enabled .Values.backup.persistence.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "gitea-helm.fullname" . }}-backup
+  labels:
+    {{- include "gitea-helm.labels" . | nindent 4 }}
+
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+
+      template:
+        spec:
+          serviceAccountName: {{ include "gitea-helm.fullname" . }}-backup
+          automountServiceAccountToken: true
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 240
+
+          containers:
+            - name: backup
+              image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
+              imagePullPolicy: {{ .Values.backup.image.pullPolicy }}
+
+              env:
+                - name: NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+
+                - name: RELEASE_NAME
+                  value: {{ .Release.Name | quote }}
+
+                - name: DEPLOYMENT_NAME
+                  value: gitea
+
+                - name: GITEA_DATA_DIR
+                  value: /gitea-data
+
+                - name: BACKUP_DIR
+                  value: /backups
+
+                - name: PGHOST
+                  value: postgres
+
+                - name: PGPORT
+                  value: {{ .Values.postgres.service.port | quote }}
+
+                - name: PGDATABASE
+                  value: {{ .Values.postgres.database | quote }}
+
+                - name: PGUSER
+                  value: {{ .Values.postgres.username | quote }}
+
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgres.existingSecret | default (printf "%s-postgres" (include "gitea-helm.fullname" .)) }}
+                      key: {{ .Values.postgres.secretKeys.postgresPassword }}
+
+                - name: RETENTION_DAYS
+                  value: {{ .Values.backup.retentionDays | quote }}
+
+                - name: POD_TERMINATION_TIMEOUT
+                  value: {{ .Values.backup.podTerminationTimeout | quote }}
+
+              volumeMounts:
+                - name: gitea-data
+                  mountPath: /gitea-data
+                  readOnly: true
+
+                - name: backup-storage
+                  mountPath: /backups
+
+          volumes:
+            - name: gitea-data
+              persistentVolumeClaim:
+                claimName: {{ include "gitea-helm.fullname" . }}-gitea
+
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: {{ include "gitea-helm.fullname" . }}-backup
+{{- end }}

@@ -1,0 +1,6 @@
+# Скрипты выполняются в alpine-образе — строго LF, иначе контейнер сломается
+* text=auto
+*.sh text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.tpl text eol=lf

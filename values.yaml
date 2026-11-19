@@ -1,0 +1,123 @@
+
+# Chart naming
+nameOverride: ""
+fullnameOverride: ""
+
+# Gitea configuration
+gitea:
+  replicaCount: 2
+
+  image:
+    repository: docker.gitea.com/gitea
+    tag: "1.25.0-rootless"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    httpPort: 3000
+    sshPort: 2222
+
+  persistence:
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  probes:
+    startup:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 30
+
+    liveness:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+
+    readiness:
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 6
+
+# PostgreSQL configuration
+postgres:
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+
+  database: gitea
+  username: gitea
+
+  # Secret configuration
+  existingSecret: ""
+
+  secretKeys:
+    postgresPassword: postgres-password
+
+  service:
+    port: 5432
+
+  persistence:
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  probes:
+    startup:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 30
+
+    liveness:
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+
+    readiness:
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: traefik
+  host: gitea.local
+
+# Backup configuration
+backup:
+  enabled: true
+
+  image:
+    repository: gitea-backup
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+
+  schedule: "0 2 * * *"
+  retentionDays: 14
+  podTerminationTimeout: 180
+
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi

@@ -1,0 +1,4 @@
+postgres:
+  # Локальный пароль БД. Скопируй файл в values-dev.yaml и задай свой —
+  # values-dev.yaml игнорируется git'ом.
+  password: "REPLACE_ME"
